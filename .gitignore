@@ -1,0 +1,12 @@
+.DS_Store
+config.xml
+.git
+README.md
+.env
+bin/
+obj/
+.vs/
+.vscode/
+.idea/
+*.log
+*.tmp
