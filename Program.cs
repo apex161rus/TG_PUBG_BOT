@@ -11,6 +11,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using System.Xml;
+using Telegram.Bot.Polling;
 
 var xmlDoc = new XmlDocument();
 string Config()
@@ -66,12 +67,6 @@ if (adminIds.Count == 0)
     Console.WriteLine("Предупреждение: Список админов пуст!");
 }
 
-
-// using var cts = new CancellationTokenSource();
-
-// Функция проверки админских прав
-// bool IsAdmin(long userId) => adminIds.Contains(userId);
-
 if (string.IsNullOrEmpty(token))
 {
     Console.WriteLine("Ошибка: не передан токен бота!");
@@ -106,10 +101,7 @@ async Task UpdateHandler(ITelegramBotClient botClient, Update update, Cancellati
         {
             case UpdateType.Message:
             {
-                //ID — просто выходим
-                // long idNamsDarkApexNet = 5976500787;
-                long idNamsDarkApexNet = 597;
-                long idNamsVolunqw = 1004195686;
+                
                 var msg = update.Message;
 
                 if (msg?.Text == null) return; // если текста нет — ничего не делаем
@@ -122,7 +114,8 @@ async Task UpdateHandler(ITelegramBotClient botClient, Update update, Cancellati
                     bool isVipUser = (userId == adminIds[1] || userId == adminIds[0]);
 
 
-                int rand = Random.Shared.Next(2, 6);
+                int randVoices = Random.Shared.Next(1, 7);
+                int randVideo = Random.Shared.Next(1, 28);
 
                 string text1 = msg.Text.Trim().ToLower();
                 string[] keywords = { "селива", "селева", "ну че там", "че когда", "когда" };
@@ -145,9 +138,8 @@ async Task UpdateHandler(ITelegramBotClient botClient, Update update, Cancellati
                         else
                         {
                             string basePath = AppContext.BaseDirectory;
-                            string voicePath = Path.Combine(basePath, "Voices", $"{rand}.ogg");
-                            string pathMacOS = $"/Users/vladislavfurazkin/Desktop/доки/тестовый Бот/pubg_bot_restart/Voices/{rand}.ogg";
-                            // остальные → отправляем голосовое сообщение
+                            string voicePath = Path.Combine(basePath, "Voices", $"{randVoices}.ogg");
+                            string pathMacOS = $"/Users/vladislavfurazkin/Desktop/доки/тестовый Бот/pubg_bot_restart/Voices/{randVoices}.ogg";
                             using var filePath = File.OpenRead(GetPath(voicePath,pathMacOS));
                             await botClient.SendVoice(
                                 chatId: msg.Chat.Id,
@@ -192,8 +184,8 @@ async Task UpdateHandler(ITelegramBotClient botClient, Update update, Cancellati
                     });
 
                         string basePath = AppContext.BaseDirectory;
-                        string videoPath = Path.Combine(basePath, "Video", $"играть.MOV");
-                        string videoPath1 = "/Users/vladislavfurazkin/Desktop/доки/тестовый Бот/pubg_bot_restart/Video/играть.MOV";
+                        string videoPath = Path.Combine(basePath, "Video", $"Test.mp4");
+                        string videoPath1 = "/Users/vladislavfurazkin/Desktop/доки/тестовый Бот/pubg_bot_restart/Video/Test.mp4";
                         // открываем поток
 
 
@@ -207,7 +199,7 @@ async Task UpdateHandler(ITelegramBotClient botClient, Update update, Cancellati
                             // Отправляем сообщение (форма события)
                             var sent = await botClient.SendMessage(
                             chatId: chatId,
-                            text: $"🕒 Селева на {time}\n\nПодписчики:\n(пока нет)\n\nОтписавшиеся:\n(пока нет)",
+                            text: $"🕒 Созыв конченых {time}\n\nПодписчики:\n(пока нет)\n\nОтписавшиеся:\n(пока нет)",
                             replyMarkup: inlineKeyboard,
                             cancellationToken: cancellationToken
                             );
@@ -224,15 +216,24 @@ async Task UpdateHandler(ITelegramBotClient botClient, Update update, Cancellati
                         }
                         else
                         {
-                            string voicePath = Path.Combine(basePath, "Voices", $"{rand}.ogg");
-                            string pathMacOS = $"/Users/vladislavfurazkin/Desktop/доки/тестовый Бот/pubg_bot_restart/Voices/{rand}.ogg";
+                            string videoPath2 = Path.Combine(basePath, "Video", $"Video{randVideo}.MP4");
+                            string videoPathMacOS = $"/Users/vladislavfurazkin/Desktop/доки/тестовый Бот/pubg_bot_restart/Video/Video{randVideo}.MP4";
                             // остальные → отправляем голосовое сообщение
-                            using var filePath = File.OpenRead(GetPath(voicePath,pathMacOS));
-                            await botClient.SendVoice(
+                            using var fileVideo = File.OpenRead(GetPath(videoPath2,videoPathMacOS));
+                            await botClient.SendVideoNote(
                                 chatId: msg.Chat.Id,
-                                voice: new InputFileStream(filePath),
+                                videoNote: new InputFileStream(fileVideo),
                                 replyParameters: msg.MessageId
                             );
+                            // string voicePath = Path.Combine(basePath, "Voices", $"{randVoices}.ogg");
+                            // string pathMacOS = $"/Users/vladislavfurazkin/Desktop/доки/тестовый Бот/pubg_bot_restart/Voices/{randVoices}.ogg";
+                            // // остальные → отправляем голосовое сообщение
+                            // using var filePath = File.OpenRead(GetPath(voicePath,pathMacOS));
+                            // await botClient.SendVoice(
+                            //     chatId: msg.Chat.Id,
+                            //     voice: new InputFileStream(filePath),
+                            //     replyParameters: msg.MessageId
+                            // );
                         }
                     }
 
@@ -484,7 +485,17 @@ _ = Task.Run(async () =>
 // ---------------------------
 // Важно: StartReceiving вызываем после того, как все переменные (events, обработчики) уже объявлены/инициализированы.
 var me = await bot.GetMe();
-bot.StartReceiving(UpdateHandler, ErrorHandler, cancellationToken: cts.Token);
+bot.StartReceiving(UpdateHandler, ErrorHandler, new ReceiverOptions
+{
+    AllowedUpdates = new[]
+    {
+        UpdateType.Message,
+        UpdateType.CallbackQuery
+    },
+    DropPendingUpdates = true,
+    Limit = 100
+},
+ cancellationToken: cts.Token);
 
 Console.WriteLine($"Бот запущен: @{me.Username}");
 // Держим приложение оживлённым, пока не придёт сигнал отмены
